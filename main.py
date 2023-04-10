@@ -15,7 +15,7 @@ client = ""
 BROKER = "localhost"
 SUBSCRIPTION_TOPIC = "msg/spk" #w kodzie dodamy /usr gdzie usr to bedzie moje id
 PUBLICATION_TOPIC = "msg/mic"
-
+is_listening = False
 removed_once = False
 text_counter = 0
 
@@ -173,13 +173,21 @@ def send_text_message():
 
 
 def speech_to_text():
+    threading.Thread(target=_speech_to_text).start()
+
+def _speech_to_text():
+    global is_listening
     r = sr.Recognizer()
     with sr.Microphone() as source:
-        audio = r.listen(source)
-
+        if is_listening:
+            audio = r.listen(source)
+            is_listening = not is_listening
+            mic_animation()
+        else:
+            return
     try:
         text = r.recognize_google(audio, language='pl_PL')
-        sending_message = my_name + "|" + r.recognize_google(audio, language='pl_PL')
+        sending_message = my_name + "|" + text
         send(PUBLICATION_TOPIC, sending_message)
         addMessageOnCanvas(text,icon_person,"e",True,40,my_name)
     except sr.UnknownValueError:
@@ -188,15 +196,18 @@ def speech_to_text():
         print('error:', e)
 
 
-def _mic_animation():
-    mic_button.config(relief=tk.SUNKEN)
-    root.update()
-    mic_button.after(100, lambda: mic_button.config(relief=tk.RAISED))
-    root.update()
+
+
 
 def mic_animation():
-    threading.Thread(target=_mic_animation).start()
-    
+    global is_listening
+    if not is_listening:
+        mic_button.config(bg="#e5e5e5", text="Send Voice")
+        is_listening = True
+        speech_to_text()
+    else:
+        mic_button.config(bg="#8ac6d1", text="Speak")
+        is_listening = False
 
 
 
@@ -308,14 +319,13 @@ if __name__ == "__main__":
 
     buttons_frame = tk.Frame(root, bg='#222222')
     buttons_frame.pack(padx=20, pady=10)
-
-    mic_button = tk.Button(buttons_frame, text="Speak", command=speech_to_text, bg='#8ac6d1', fg='#333333', font=('Roboto', 12), width=10, height=6, relief=tk.RAISED, bd=0, activebackground='#e5e5e5', activeforeground='#333333', cursor='hand2')
+    
+    #mikrofon
+    mic_button = tk.Button(buttons_frame, text="Speak", command=mic_animation, bg='#8ac6d1', fg='#333333', font=('Roboto', 12), width=10, height=6, relief=tk.RAISED, bd=0, activebackground='#e5e5e5', activeforeground='#333333', cursor='hand2')
     mic_button.pack(side=tk.LEFT, padx=5)
 
     mute_button = tk.Button(buttons_frame, text="Mute", command=toggle_mute, bg='#8ac6d1', fg='#333333', font=('Roboto', 12), width=10, height=6, relief=tk.RAISED, bd=0, activebackground='#e5e5e5', activeforeground='#333333', cursor='hand2')
     mute_button.pack(side=tk.LEFT, padx=5)
-    mic_button.bind('<Button-1>', lambda event: mic_animation())
-
 
     unheard_label = tk.Label(buttons_frame, text="", font=('Roboto', 12), bg='#222222', fg='#ffffff')
     unheard_label.pack(side=tk.LEFT, padx=5)
