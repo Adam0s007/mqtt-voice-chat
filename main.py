@@ -220,85 +220,117 @@ def is_broker_running(host, port):
     return result == 0
 
 
-if not is_broker_running(BROKER,1883):
-    print("Mosquitto is OFF")
-    exit(1)
+def create_name_label(parent_frame):
+    label = tk.Label(parent_frame, text="Your Name:", font=('Roboto', 12), bg='#222222', fg='#ffffff')
+    return label
 
 
-root = tk.Tk()
-root.title("MQTT Communication App")
-
-root.geometry('700x500')
-root.configure(bg='#222222')
-root.resizable(width=False, height=False)
-
-icon_image = Image.open('icon.png')  # lub 'emoji.png'
-icon_image = icon_image.resize((30, 30))  # dostosuj rozmiar
-icon = ImageTk.PhotoImage(icon_image)
-root.iconphoto(True, icon)
-
-icon_anotherPerson = Image.open('person.jpg')  # lub 'emoji.png'
-icon_anotherPerson = icon_anotherPerson.resize((30, 30))  # dostosuj rozmiar
-icon_person = ImageTk.PhotoImage(icon_anotherPerson)
+def create_name_input(parent_frame):
+    entry = ttk.Entry(parent_frame, font=('Roboto', 14), background='white', foreground='#000000', width=15)
+    entry.insert(0, my_name)
+    return entry
 
 
-# definicja stylów ttk
-style = ttk.Style()
-style.theme_use('default')
-style.configure('TLabel', font=('Roboto', 14), background='#222222', foreground='#fff')
-style.configure('TButton', font=('Roboto', 14), background='#3498db', foreground='#fff', width=10, pady=8, borderwidth=0, activebackground='#2980b9')
+def create_custom_event(widget):
+    variable = tk.StringVar()
+    variable.trace("w", lambda *args: widget.event_generate("<<NameChanged>>"))
+    widget.config(textvariable=variable)
+    return variable
 
-style.configure('TEntry', font=('Roboto', 14), background='rgba(255, 255, 255)', foreground='#000000', width=30, borderwidth=0)
-
-
-
-# widgety
-canvas_frame = tk.Frame(root, bg='#ffffff')
-canvas_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
-graph_canvas = tk.Canvas(canvas_frame, bg='#ffffff', highlightthickness=0)
-graph_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-scrollbar = tk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=graph_canvas.yview)
-scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+def on_name_change(event):
+    global my_name
+    my_name = myName_entry.get().strip() or "username"
 
 
-graph_canvas.create_text(250, 150, text="Tutaj pojawią się wiadomości", fill='#333333', font=('Roboto', 14), anchor='center')
+if __name__ == "__main__":
 
-text_entry_frame = ttk.Frame(root, style='TLabel')
-text_entry_frame.pack(fill=tk.X, padx=50, pady=10)
+    if not is_broker_running(BROKER,1883):
+        print("Mosquitto is OFF")
+        exit(1)
 
-text_entry = tk.Text(text_entry_frame, font=('Roboto', 14), background='white', foreground='#000000', width=20, height=2.5, borderwidth=0, wrap=tk.WORD)
-text_entry.pack(side=tk.LEFT, padx=5, pady=5, expand=True, fill=tk.X)
 
-text_entry.bind('<FocusIn>', remove_placeholder)
-text_entry.bind('<FocusOut>', set_placeholder)
+    root = tk.Tk()
+    root.title("MQTT Communication App")
 
-text_entry.insert('1.0', 'Wpisz wiadomość...')
-text_entry.config(fg='#777777')
+    root.geometry('700x500')
+    root.configure(bg='#222222')
+    root.resizable(width=False, height=False)
 
-send_text_button = ttk.Button(text_entry_frame, text="Send", command=send_text_message, style='TButton', cursor='hand2')
-send_text_button.pack(side=tk.LEFT, padx=5, pady=5)
+    icon_image = Image.open('icon.png')  # lub 'emoji.png'
+    icon_image = icon_image.resize((30, 30))  # dostosuj rozmiar
+    icon = ImageTk.PhotoImage(icon_image)
+    root.iconphoto(True, icon)
+
+    icon_anotherPerson = Image.open('person.jpg')  # lub 'emoji.png'
+    icon_anotherPerson = icon_anotherPerson.resize((30, 30))  # dostosuj rozmiar
+    icon_person = ImageTk.PhotoImage(icon_anotherPerson)
+
+
+    # definicja stylów ttk
+    style = ttk.Style()
+    style.theme_use('default')
+    style.configure('TLabel', font=('Roboto', 14), background='#222222', foreground='#fff')
+    style.configure('TButton', font=('Roboto', 14), background='#3498db', foreground='#fff', width=10, pady=8, borderwidth=0, activebackground='#2980b9')
+
+    style.configure('TEntry', font=('Roboto', 14), background='rgba(255, 255, 255)', foreground='#000000', width=30, borderwidth=0)
 
 
 
-buttons_frame = tk.Frame(root, bg='#222222')
-buttons_frame.pack(padx=20, pady=10)
+    # widgety
+    canvas_frame = tk.Frame(root, bg='#ffffff')
+    canvas_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-mic_button = tk.Button(buttons_frame, text="Speak", command=speech_to_text, bg='#8ac6d1', fg='#333333', font=('Roboto', 12), width=10, height=6, relief=tk.RAISED, bd=0, activebackground='#e5e5e5', activeforeground='#333333', cursor='hand2')
-mic_button.pack(side=tk.LEFT, padx=5)
+    graph_canvas = tk.Canvas(canvas_frame, bg='#ffffff', highlightthickness=0)
+    graph_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-mute_button = tk.Button(buttons_frame, text="Mute", command=toggle_mute, bg='#8ac6d1', fg='#333333', font=('Roboto', 12), width=10, height=6, relief=tk.RAISED, bd=0, activebackground='#e5e5e5', activeforeground='#333333', cursor='hand2')
-mute_button.pack(side=tk.LEFT, padx=5)
-mic_button.bind('<Button-1>', lambda event: mic_animation())
-
+    scrollbar = tk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=graph_canvas.yview)
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
 
-unheard_label = tk.Label(buttons_frame, text="", font=('Roboto', 12), bg='#222222', fg='#ffffff')
-unheard_label.pack(side=tk.LEFT, padx=5)
+    graph_canvas.create_text(250, 150, text="Tutaj pojawią się wiadomości", fill='#333333', font=('Roboto', 14), anchor='center')
 
-init_broker()
-init_speaker()
+    text_entry_frame = ttk.Frame(root, style='TLabel')
+    text_entry_frame.pack(fill=tk.X, padx=50, pady=10)
 
-root.mainloop()
-client.loop_stop()
+    text_entry = tk.Text(text_entry_frame, font=('Roboto', 14), background='white', foreground='#000000', width=20, height=2.5, borderwidth=0, wrap=tk.WORD)
+    text_entry.pack(side=tk.LEFT, padx=5, pady=5, expand=True, fill=tk.X)
+
+    text_entry.bind('<FocusIn>', remove_placeholder)
+    text_entry.bind('<FocusOut>', set_placeholder)
+
+    text_entry.insert('1.0', 'Wpisz wiadomość...')
+    text_entry.config(fg='#777777')
+
+    send_text_button = ttk.Button(text_entry_frame, text="Send", command=send_text_message, style='TButton', cursor='hand2')
+    send_text_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+
+
+    buttons_frame = tk.Frame(root, bg='#222222')
+    buttons_frame.pack(padx=20, pady=10)
+
+    mic_button = tk.Button(buttons_frame, text="Speak", command=speech_to_text, bg='#8ac6d1', fg='#333333', font=('Roboto', 12), width=10, height=6, relief=tk.RAISED, bd=0, activebackground='#e5e5e5', activeforeground='#333333', cursor='hand2')
+    mic_button.pack(side=tk.LEFT, padx=5)
+
+    mute_button = tk.Button(buttons_frame, text="Mute", command=toggle_mute, bg='#8ac6d1', fg='#333333', font=('Roboto', 12), width=10, height=6, relief=tk.RAISED, bd=0, activebackground='#e5e5e5', activeforeground='#333333', cursor='hand2')
+    mute_button.pack(side=tk.LEFT, padx=5)
+    mic_button.bind('<Button-1>', lambda event: mic_animation())
+
+
+    unheard_label = tk.Label(buttons_frame, text="", font=('Roboto', 12), bg='#222222', fg='#ffffff')
+    unheard_label.pack(side=tk.LEFT, padx=5)
+
+    name_label = create_name_label(buttons_frame)
+    name_label.pack(side=tk.LEFT, padx=5)
+
+    myName_entry = create_name_input(buttons_frame)
+    myName_entry.pack(side=tk.LEFT, padx=5)
+    name_var = create_custom_event(myName_entry)
+    myName_entry.bind("<<NameChanged>>", on_name_change)
+
+
+    init_broker()
+    init_speaker()
+
+    root.mainloop()
+    client.loop_stop()
