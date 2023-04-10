@@ -13,7 +13,7 @@ import socket
 my_name = ""
 client = ""
 BROKER = "localhost"
-SUBSCRIPTION_TOPIC = "msg/spk" #w kodzie dodamy /usr gdzie usr to bedzie moje id
+SUBSCRIPTION_TOPIC = "msg/spk" 
 PUBLICATION_TOPIC = "msg/mic"
 is_listening = False
 removed_once = False
@@ -25,7 +25,8 @@ messages_queue = Queue()
 unheard_count = 0
 unheard_label = None
 
-
+# Lista możliwych odbiorców
+recipients = ["msg/mic", "msg/mic/#", "msg/mic/Adam", "msg/mic/Piotr"]
 
 def toggle_mute():
     global mute
@@ -45,7 +46,7 @@ def update_unheard_label():
     global unheard_count
     global unheard_label
     if unheard_count > 0:
-        unheard_label.config(text=f"{unheard_count} unheard messages")
+        unheard_label.config(text=f"({unheard_count})")
     else:
         unheard_label.config(text="")
 
@@ -111,28 +112,37 @@ def addMessageOnCanvas(sendText, icon, param1="w", is_user_message=False, value=
         text_counter += 1
 
 
-
+#otrzymywane wiadomosci i odpowiedni zapis nazwy uzytkownika.
+# jesli nasluchujemy na msg/spk/# to sytuacja w ktorej: -t "msg/spk/Adam" -m"Joe|Witaj" -> Joe bedzie nazwą bo bedzie silniejsze 
 def on_message(client, userdata, message):
     try:
         payload = message.payload.decode("utf-8")
     except UnicodeDecodeError:
         payload = message.payload.decode('latin-1')
+
+    # Odczytaj nazwę użytkownika z tematu wiadomości
+    topic_parts = message.topic.split('/')
+    if len(topic_parts) >= 3:
+        sender_id = "_".join(topic_parts[2:])
+    else:
+        sender_id = "Stranger"
     arr = payload.split('|', 1)
     if (len(arr) != 2):
-        sender_id = "Stranger"
         message_text = "".join(arr)
     else:
-        sender_id,message_text = arr
-        sender_id = sender_id.replace(" ", "")
+        sender_id_part, message_text = arr
+        sender_id_part = sender_id_part.replace(" ", "")
+        if sender_id_part:
+            sender_id = sender_id_part
+
     if mute:
         global unheard_count
         timestamp = datetime.datetime.now().strftime('%H:%M')
-        messages_queue.put((sender_id,message_text,timestamp))
+        messages_queue.put((sender_id, message_text, timestamp))
         unheard_count += 1
         update_unheard_label()
     else:
-        play_queued_messages() if not messages_queue.empty() else receiveMessage(message_text,sender_id)
-
+        play_queued_messages() if not messages_queue.empty() else receiveMessage(message_text, sender_id)
 
 
 def init_speaker():
@@ -162,9 +172,10 @@ def init_broker():
     client.loop_start()
     client.subscribe([(SUBSCRIPTION_TOPIC, 0)])
 
+
+
 def send_text_message():
-    global my_name
-    text = my_name + "|" + text_entry.get('1.0', tk.END).strip()
+    text = text_entry.get('1.0', tk.END).strip()
     display_text = text_entry.get('1.0', tk.END).strip()
     send(PUBLICATION_TOPIC, text)
 
@@ -187,15 +198,13 @@ def _speech_to_text():
             return
     try:
         text = r.recognize_google(audio, language='pl_PL')
-        sending_message = my_name + "|" + text
+        sending_message = text
         send(PUBLICATION_TOPIC, sending_message)
         addMessageOnCanvas(text,icon_person,"e",True,40,my_name)
     except sr.UnknownValueError:
         print('nie rozumiem')
     except sr.RequestError as e:
         print('error:', e)
-
-
 
 
 
@@ -214,11 +223,11 @@ def mic_animation():
 
 def set_placeholder(event=None):
     if text_entry.get('1.0', tk.END).strip() == '':
-        text_entry.insert('1.0', 'Wpisz wiadomość...')
+        text_entry.insert('1.0', 'Enter your message...')
         text_entry.config(fg='#777777')
 
 def remove_placeholder(event=None):
-    if text_entry.get('1.0', tk.END).strip() == 'Wpisz wiadomość...':
+    if text_entry.get('1.0', tk.END).strip() == 'Enter your message...':
         text_entry.delete('1.0', tk.END)
         text_entry.config(fg='#000000')
 
@@ -231,15 +240,9 @@ def is_broker_running(host, port):
     return result == 0
 
 
-def create_name_label(parent_frame):
-    label = tk.Label(parent_frame, text="Your Name:", font=('Roboto', 12), bg='#222222', fg='#ffffff')
-    return label
 
+    
 
-def create_name_input(parent_frame):
-    entry = ttk.Entry(parent_frame, font=('Roboto', 14), background='white', foreground='#000000', width=15)
-    entry.insert(0, my_name)
-    return entry
 
 
 def create_custom_event(widget):
@@ -253,6 +256,42 @@ def on_name_change(event):
     my_name = myName_entry.get().strip() or "username"
 
 
+def toggle_topic_subscription(event=None):
+    global client
+    global SUBSCRIPTION_TOPIC
+    global change_topic_button
+
+    if SUBSCRIPTION_TOPIC == "msg/spk":
+        SUBSCRIPTION_TOPIC = "msg/spk/#"
+        change_topic_button.config(text="Change to 'msg/spk'")
+    else:
+        SUBSCRIPTION_TOPIC = "msg/spk"
+        change_topic_button.config(text="Change to 'msg/spk/#'")
+    
+    client.unsubscribe("msg/spk")
+    client.unsubscribe("msg/spk/#")
+    client.subscribe([(SUBSCRIPTION_TOPIC,0)])
+
+
+def create_change_topic_button(parent_frame):
+    
+    button = ttk.Button(parent_frame, text="Change to 'msg/spk/#'", command=toggle_topic_subscription, style='ChangeTopic.TButton', cursor='hand2')
+    return button
+
+def change_publication_topic(new_topic):
+    global PUBLICATION_TOPIC
+    PUBLICATION_TOPIC = new_topic
+    #print(f"Zmieniono temat publikacji na: {PUBLICATION_TOPIC}")
+
+# Funkcja dodająca nowego odbiorcę
+def add_recipient():
+    new_recipient = new_recipient_entry.get().strip()
+    if new_recipient and new_recipient not in recipients:
+        recipients.append(new_recipient)
+        option_menu["values"] = recipients
+        new_recipient_entry.delete(0, tk.END)
+
+
 if __name__ == "__main__":
 
     if not is_broker_running(BROKER,1883):
@@ -263,7 +302,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.title("MQTT Communication App")
 
-    root.geometry('700x500')
+    root.geometry('700x600')
     root.configure(bg='#222222')
     root.resizable(width=False, height=False)
 
@@ -281,11 +320,12 @@ if __name__ == "__main__":
     style = ttk.Style()
     style.theme_use('default')
     style.configure('TLabel', font=('Roboto', 14), background='#222222', foreground='#fff')
-    style.configure('TButton', font=('Roboto', 14), background='#3498db', foreground='#fff', width=10, pady=8, borderwidth=0, activebackground='#2980b9')
+    style.configure('TButton', font=('Roboto', 14), background='#3498db', foreground='#000', width=10, pady=8, borderwidth=0, activebackground='#2980b9')
 
     style.configure('TEntry', font=('Roboto', 14), background='rgba(255, 255, 255)', foreground='#000000', width=30, borderwidth=0)
+    style.configure('ChangeTopic.TButton', font=('Roboto', 10), background='#3498db', foreground='#000', width=20, pady=8, borderwidth=0, activebackground='#2980b9')
 
-
+    
 
     # widgety
     canvas_frame = tk.Frame(root, bg='#ffffff')
@@ -298,7 +338,7 @@ if __name__ == "__main__":
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
 
-    graph_canvas.create_text(250, 150, text="Tutaj pojawią się wiadomości", fill='#333333', font=('Roboto', 14), anchor='center')
+    graph_canvas.create_text(250, 150, text="Messages will appear here", fill='#333333', font=('Roboto', 14), anchor='center')
 
     text_entry_frame = ttk.Frame(root, style='TLabel')
     text_entry_frame.pack(fill=tk.X, padx=50, pady=10)
@@ -309,7 +349,7 @@ if __name__ == "__main__":
     text_entry.bind('<FocusIn>', remove_placeholder)
     text_entry.bind('<FocusOut>', set_placeholder)
 
-    text_entry.insert('1.0', 'Wpisz wiadomość...')
+    text_entry.insert('1.0', 'Enter your message...')
     text_entry.config(fg='#777777')
 
     send_text_button = ttk.Button(text_entry_frame, text="Send", command=send_text_message, style='TButton', cursor='hand2')
@@ -327,20 +367,60 @@ if __name__ == "__main__":
     mute_button = tk.Button(buttons_frame, text="Mute", command=toggle_mute, bg='#8ac6d1', fg='#333333', font=('Roboto', 12), width=10, height=6, relief=tk.RAISED, bd=0, activebackground='#e5e5e5', activeforeground='#333333', cursor='hand2')
     mute_button.pack(side=tk.LEFT, padx=5)
 
-    unheard_label = tk.Label(buttons_frame, text="", font=('Roboto', 12), bg='#222222', fg='#ffffff')
+    unheard_label = tk.Label(buttons_frame, text="", font=('Roboto', 14, "bold"), bg='#222222', activeforeground='#333333', fg='#c03207')
     unheard_label.pack(side=tk.LEFT, padx=5)
 
-    name_label = create_name_label(buttons_frame)
-    name_label.pack(side=tk.LEFT, padx=5)
+    name_frame = tk.Frame(buttons_frame, bg='#222222')
+    name_frame.pack(side=tk.RIGHT, padx=5)
 
-    myName_entry = create_name_input(buttons_frame)
-    myName_entry.pack(side=tk.LEFT, padx=5)
+    name_label = tk.Label(name_frame, text="Your Name:", font=('Roboto', 12), bg='#222222', fg='#ffffff')
+    myName_entry = ttk.Entry(name_frame, font=('Roboto', 14), background='white', foreground='#000000', width=15)
+    name_label.pack(side=tk.TOP, padx=5)
+    myName_entry.pack(side=tk.TOP, padx=5)
+    myName_entry.insert(0, my_name)
     name_var = create_custom_event(myName_entry)
     myName_entry.bind("<<NameChanged>>", on_name_change)
 
 
+
+    change_topic_frame = tk.Frame(buttons_frame, bg='#222222')
+    change_topic_frame.pack(side=tk.LEFT, padx=5)
+    change_topic_button = create_change_topic_button(buttons_frame)
+    change_topic_button.pack(in_=change_topic_frame, padx=5, pady=(0, 5))
+    # Utwórz zmienną, która przechowuje aktualnie wybrany temat
+    current_topic = tk.StringVar(root)
+    current_topic.set(recipients[0])  # Ustaw domyślny temat na pierwszy z listy
+    
+    style.configure('OptionMenu.TMenubutton', font=('Roboto', 12), background='#3498db', foreground='#000', width=20, pady=8, borderwidth=0, activebackground='#2980b9')
+    #style.map('OptionMenu.TMenubutton', background=[('disabled', '#222222'), ('pressed', '#2980b9'), ('active', '#2980b9')], foreground=[('disabled', '#777777')])
+    style.configure('TCombobox', font=('Roboto', 12), background='#3498db', foreground='#000', fieldbackground='#ffffff', selectbackground='#2980b9', selectforeground='#ffffff')
+    style.map('TCombobox', fieldbackground=[('readonly', '#ffffff')], selectbackground=[('readonly', '#2980b9')], selectforeground=[('readonly', '#ffffff')])
+    
+    option_menu = ttk.Combobox(change_topic_frame, textvariable=current_topic, values=recipients, state='readonly', style='TCombobox')
+    option_menu.bind('<<ComboboxSelected>>', change_publication_topic)
+    option_menu.current(0)  # Ustaw domyślny temat na pierwszy z listy
+    option_menu.pack(pady=(0, 5))
+    # Dodaj nowy Label
+    new_recipient_label = ttk.Label(change_topic_frame, text="Add recipient:", style='TLabel')
+    new_recipient_label.pack(pady=(5, 0))
+
+    # Dodaj nowy Entry
+    new_recipient_entry = ttk.Entry(change_topic_frame, font=('Roboto', 12), width=20, style='TEntry')
+    new_recipient_entry.pack(pady=(0, 5))
+
+    # Dodaj przycisk "Dodaj"
+    add_button = ttk.Button(change_topic_frame, text="Dodaj", command=add_recipient, style='TButton', cursor='hand2')
+    add_button.pack(pady=(0, 5))
+
+    
+    
+
     init_broker()
     init_speaker()
+
+
+    # message_queue_thread = threading.Thread(target=process_message_queue, daemon=True)
+    # message_queue_thread.start()
 
     root.mainloop()
     client.loop_stop()
