@@ -41,7 +41,23 @@ Usage
 
 Run the script `main.py`:
 
-    python main.py
+    ```python main.py```
+
+## MQTT Topics
+
+To properly use the MQTT Communication App, make sure to subscribe to the correct topic and send messages to the appropriate topic:
+
+1. Run `mosquitto_sub` to subscribe to the topic "msg/mic":
+
+```bash
+mosquitto_sub -h localhost -t "msg/mic"
+
+2. To send messages to the application, publish them to the topic "msg/spk". You can do this using mosquitto_pub:
+
+```bash
+mosquitto_pub -h localhost -t "msg/spk" -m "your_message_here"
+
+
     
 
 The application will launch, and you can start sending and receiving messages using the GUI.
