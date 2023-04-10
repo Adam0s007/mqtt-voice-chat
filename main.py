@@ -27,7 +27,7 @@ unheard_count = 0
 unheard_label = None
 
 # Lista możliwych odbiorców
-recipients = ["msg/mic", "msg/mic/#", "msg/mic/Adam", "msg/mic/Piotr"]
+recipients = ["msg/mic", "msg/mic/#"]
 
 def toggle_mute():
     global mute
