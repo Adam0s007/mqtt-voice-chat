@@ -27,7 +27,7 @@ unheard_count = 0
 unheard_label = None
 
 # Lista możliwych odbiorców
-recipients = ["msg/mic", "msg/mic/#"]
+recipients = ["msg/mic"]
 
 def toggle_mute():
     global mute
@@ -276,10 +276,10 @@ def create_change_topic_button(parent_frame):
     button = ttk.Button(parent_frame, text="Change to 'msg/spk/#'", command=toggle_topic_subscription, style='ChangeTopic.TButton', cursor='hand2')
     return button
 
-def change_publication_topic(new_topic):
+def change_publication_topic(event):
     global PUBLICATION_TOPIC
-    PUBLICATION_TOPIC = new_topic
-    #print(f"Zmieniono temat publikacji na: {PUBLICATION_TOPIC}")
+    PUBLICATION_TOPIC = event.widget.get()
+    print(f"Zmieniono temat publikacji na: {PUBLICATION_TOPIC}")
 
 # Funkcja dodająca nowego odbiorcę
 def add_recipient():
