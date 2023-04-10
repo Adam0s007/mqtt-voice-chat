@@ -22,6 +22,15 @@ When the "Speak" button is clicked, the application starts listening for voice i
 
 To stop listening and deactivate the microphone, click "Turn off". This will toggle the microphone off, and the button will return to its original state.
 
+### Continuous Message Playback
+
+Thanks to the implementation of multithreading, the application is now capable of receiving and processing new messages even while it is playing back previously queued messages. This enhancement ensures that users can continue to communicate seamlessly without having to wait for the application to finish playing back messages. To achieve this, the application uses a separate thread to handle the message queue, allowing new incoming messages to be added to the queue without interrupting the ongoing playback.
+
+
+### List of recipents
+The application allows users to add new recipients for messages. This feature enables users to customize the list of recipients they want to send messages to, allowing for more targeted communication.
+
+
 Requirements
 ------------
 
@@ -66,6 +75,11 @@ To properly use the MQTT Communication App, make sure to subscribe to the correc
 
 ``` mosquitto_pub -h localhost -t "msg/spk" -m "your_nick|your_message_here" ```
 
+3. When sending a message, users can now include their sender ID in the MQTT topic, which will be displayed in the application as their nickname. For example, to send a message with the sender ID "Joe_Smith", use the following command:
+
+``` mosquitto_pub -h localhost -t "msg/spk/Joe/Smith" -m "your_message_here" ```
+
+This feature only works when subscription topic is set to "msg/spk/#".
 
     
 
