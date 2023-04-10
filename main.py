@@ -188,17 +188,17 @@ def speech_to_text():
         print('error:', e)
 
 
-def mic_animation():
+def _mic_animation():
     mic_button.config(relief=tk.SUNKEN)
     root.update()
     mic_button.after(100, lambda: mic_button.config(relief=tk.RAISED))
     root.update()
 
-def speaker_animation():
-    graph_canvas.config(bg='#8ac6d1')
-    root.update()
-    graph_canvas.after(200, lambda: graph_canvas.config(bg='#fff'))
-    root.update()
+def mic_animation():
+    threading.Thread(target=_mic_animation).start()
+    
+
+
 
 
 def set_placeholder(event=None):
