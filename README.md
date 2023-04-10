@@ -13,6 +13,11 @@ Features
 *   Display of the number of unheard messages
 *   Tkinter-based user-friendly interface
 
+### Mute and Unmute functionality
+
+When the application is muted, it will queue all incoming messages along with their timestamps. Once the mute button is toggled off, the application will play and display all the queued messages in the main window along with the sender's ID and the timestamp of when the message was received. This feature ensures that users can catch up on the messages they might have missed while the application was muted.
+
+
 Requirements
 ------------
 
