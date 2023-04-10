@@ -29,18 +29,12 @@ Installation
 
 1.  Install the required Python libraries:
 
-    pip install paho-mqtt speechrecognition pyttsx3 Pillow
-    
-
-2.  Install the PyAudio library for microphone support:
-
-    pip install pyaudio
-    
+   ``` pip install paho-mqtt speechrecognition pyttsx3 Pillow pyaudio ```
+        
 
 For platform-specific installation instructions, refer to the [PyAudio documentation](https://people.csail.mit.edu/hubert/pyaudio/).
 
 3.  Install and configure the [Mosquitto MQTT broker](https://mosquitto.org/).
-4.  Place the person icon ('person.jpg') and the application icon ('icon.png') in the script's working directory.
 
 Usage
 -----
