@@ -49,13 +49,13 @@ To properly use the MQTT Communication App, make sure to subscribe to the correc
 
 1. Run `mosquitto_sub` to subscribe to the topic "msg/mic":
 
-```bash
-mosquitto_sub -h localhost -t "msg/mic"
+
+``` mosquitto_sub -h localhost -t "msg/mic" ```
 
 2. To send messages to the application, publish them to the topic "msg/spk". You can do this using mosquitto_pub:
 
-```bash
-mosquitto_pub -h localhost -t "msg/spk" -m "your_message_here"
+
+``` mosquitto_pub -h localhost -t "msg/spk" -m "your_nick|your_message_here" ```
 
 
     
