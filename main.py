@@ -202,7 +202,7 @@ def _speech_to_text():
 def mic_animation():
     global is_listening
     if not is_listening:
-        mic_button.config(bg="#e5e5e5", text="Send Voice")
+        mic_button.config(bg="#e5e5e5", text="Turn off")
         is_listening = True
         speech_to_text()
     else:
