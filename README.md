@@ -17,6 +17,10 @@ Features
 
 When the application is muted, it will queue all incoming messages along with their timestamps. Once the mute button is toggled off, the application will play and display all the queued messages in the main window along with the sender's ID and the timestamp of when the message was received. This feature ensures that users can catch up on the messages they might have missed while the application was muted.
 
+### Microphone functionality
+When the "Speak" button is clicked, the application starts listening for voice input. As the user speaks, the microphone remains active and listening. Once the user stops speaking and there is a pause in speech, the voice message is sent automatically. The microphone will continue to listen for subsequent voice messages without the need to click the "Speak" button again.
+
+To stop listening and deactivate the microphone, click "Turn off". This will toggle the microphone off, and the button will return to its original state.
 
 Requirements
 ------------
