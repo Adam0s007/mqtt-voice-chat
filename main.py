@@ -1,3 +1,4 @@
+import time
 import tkinter as tk
 from tkinter import ttk
 import paho.mqtt.client as mqtt
@@ -37,9 +38,7 @@ def toggle_mute():
         mute_button.config(bg='#f1c40f', text="Unmute")
     else:
         mute_button.config(bg='#8ac6d1', text="Mute")
-        play_queued_messages()
-        unheard_count = 0
-        update_unheard_label()
+        
 
 
 def update_unheard_label():
@@ -51,17 +50,17 @@ def update_unheard_label():
         unheard_label.config(text="")
 
 
-def play_queued_messages():
-    threading.Thread(target=_play_queued_messages).start()
+def process_message_queue():
+    global messages_queue, mute,unheard_count
 
-def _play_queued_messages():
-    global messages_queue
-    
-    while not messages_queue.empty():
-        sender_id,message,timestamp = messages_queue.get()
-        if message is not None:
-            receiveMessage(message,sender_id,timestamp)
-    messages_queue = Queue()
+    while True:
+        if not messages_queue.empty() and not mute:
+            sender_id, message, timestamp = messages_queue.get()
+            unheard_count -=1
+            update_unheard_label()
+            if message is not None:
+                receiveMessage(message, sender_id, timestamp)
+        time.sleep(0.5)
 
 def receiveMessage(message,sender_id,time=None):
     addMessageOnCanvas(message,icon,sender_id=sender_id,time=time)
@@ -93,23 +92,7 @@ def wrap_text(text, max_width=70):
 
 
 
-def addMessageOnCanvas(sendText, icon, param1="w", is_user_message=False, value=-40, sender_id=None,time=None):
-    global removed_once
-    global text_counter
-    global my_name
-    client_name = sender_id if sender_id else my_name
-    if not removed_once:
-        graph_canvas.delete("all")  # usunięcie wcześniejszych elementów z kanwy
-        removed_once = True
-    canvas_width = graph_canvas.winfo_width()
-    text_x = 50 if not is_user_message else (canvas_width - 50)
-    text_y = 100 + text_counter * 35 
-    wrapped_lines = wrap_text("("+time+") [" + client_name + "]: " + sendText) if time else wrap_text("[" + client_name + "]: " + sendText)
-    graph_canvas.create_image(text_x + value, text_y, image=icon, anchor=param1)  # dodaj ikonę przed tekstem
-    for line in wrapped_lines:
-        text_y = 100 + text_counter * 35 
-        graph_canvas.create_text(text_x, text_y, text=line, fill='black', font=('Roboto', 12), tags="current_text", anchor=param1)
-        text_counter += 1
+
 
 
 #otrzymywane wiadomosci i odpowiedni zapis nazwy uzytkownika.
@@ -135,14 +118,11 @@ def on_message(client, userdata, message):
         if sender_id_part:
             sender_id = sender_id_part
 
-    if mute:
-        global unheard_count
-        timestamp = datetime.datetime.now().strftime('%H:%M')
-        messages_queue.put((sender_id, message_text, timestamp))
-        unheard_count += 1
-        update_unheard_label()
-    else:
-        play_queued_messages() if not messages_queue.empty() else receiveMessage(message_text, sender_id)
+    global unheard_count
+    timestamp = datetime.datetime.now().strftime('%H:%M')
+    messages_queue.put((sender_id, message_text, timestamp))
+    unheard_count += 1
+    update_unheard_label()
 
 
 def init_speaker():
@@ -152,6 +132,24 @@ def init_speaker():
     engine.setProperty('rate', 190)
 
 
+
+def addMessageOnCanvas(sendText, icon, param1="w", is_user_message=False, value=-40, sender_id=None,time=None):
+    global removed_once
+    global text_counter
+    global my_name
+    client_name = sender_id if sender_id else my_name
+    if not removed_once:
+        graph_canvas.delete("all")  # usunięcie wcześniejszych elementów z kanwy
+        removed_once = True
+    canvas_width = graph_canvas.winfo_width()
+    text_x = 50 if not is_user_message else (canvas_width - 50)
+    text_y = 100 + text_counter * 35 
+    wrapped_lines = wrap_text("("+time+") [" + client_name + "]: " + sendText) if time else wrap_text("[" + client_name + "]: " + sendText)
+    graph_canvas.create_image(text_x + value, text_y, image=icon, anchor=param1)  # dodaj ikonę przed tekstem
+    for line in wrapped_lines:
+        text_y = 100 + text_counter * 35 
+        graph_canvas.create_text(text_x, text_y, text=line, fill='black', font=('Roboto', 12), tags="current_text", anchor=param1)
+        text_counter += 1
     
 
 def speakNow(text, sender_id, time=None):
@@ -419,8 +417,8 @@ if __name__ == "__main__":
     init_speaker()
 
 
-    # message_queue_thread = threading.Thread(target=process_message_queue, daemon=True)
-    # message_queue_thread.start()
+    message_queue_thread = threading.Thread(target=process_message_queue, daemon=True)
+    message_queue_thread.start()
 
     root.mainloop()
     client.loop_stop()
