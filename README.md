@@ -38,6 +38,7 @@ Requirements
 *   Tkinter
 *   paho-mqtt
 *   speech\_recognition
+*   pyAudio
 *   pyttsx3
 *   Pillow
 *   Mosquitto MQTT broker
